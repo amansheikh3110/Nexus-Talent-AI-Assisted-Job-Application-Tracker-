@@ -17,85 +17,176 @@ const getOpenAIClient = () => {
   return new OpenAI({ apiKey });
 };
 
-/** Intelligent mock parse that extracts keywords from the real JD text */
+/**
+ * Intelligent local parser that extracts structured data from job description text.
+ * Uses multiple heuristic strategies to maximize extraction accuracy.
+ */
 const mockParseJobDescription = (jdText: string): ParsedJD => {
+  const lines = jdText.split('\n').map(l => l.trim()).filter(Boolean);
   const lowerJD = jdText.toLowerCase();
 
-  // Try to extract company name from common patterns
+  // ========== COMPANY EXTRACTION ==========
   let company = 'Unknown Company';
   const companyPatterns = [
-    /(?:at|join|about)\s+([A-Z][A-Za-z0-9\s&]+?)(?:\.|,|\s+is|\s+are|\s+we)/,
-    /^([A-Z][A-Za-z0-9\s&]+?)(?:\s*[-–|]\s)/m,
+    // "About Google" / "About the Company: Stripe"
+    /about\s+(?:the\s+company[:\s]*)?([A-Z][A-Za-z0-9.\s&'-]+?)(?:\s*[,.\n])/i,
+    // "Company: Microsoft"
+    /company[:\s]+([A-Z][A-Za-z0-9.\s&'-]+?)(?:\s*[,.\n])/i,
+    // "at Google," / "at Stripe." / "join Google"
+    /(?:at|join|with)\s+([A-Z][A-Za-z0-9.&'-]+(?:\s+[A-Z][A-Za-z0-9.&'-]+){0,3})(?:\s*[,.!\s])/,
+    // First line often contains company name
+    /^([A-Z][A-Za-z0-9.\s&'-]{2,30})$/m,
+    // "Google is looking" / "Stripe is hiring"
+    /^([A-Z][A-Za-z0-9.&'-]+(?:\s+[A-Z][A-Za-z0-9.&'-]+){0,2})\s+(?:is|are)\s+(?:looking|hiring|seeking)/m,
   ];
   for (const p of companyPatterns) {
     const m = jdText.match(p);
-    if (m) { company = m[1].trim(); break; }
+    if (m && m[1].trim().length > 1 && m[1].trim().length < 40) {
+      company = m[1].trim();
+      break;
+    }
   }
 
-  // Try to extract role from common patterns
+  // ========== ROLE EXTRACTION ==========
   let role = 'Software Engineer';
   const rolePatterns = [
-    /(?:position|role|title|hiring|looking for)[:\s]+([^\n.]+)/i,
-    /^((?:Senior|Junior|Lead|Staff|Principal)\s+[A-Za-z\s]+(?:Engineer|Developer|Designer|Manager|Analyst))/im,
+    // "Job Title: Senior Software Engineer"
+    /(?:job\s*title|position|role|title)[:\s]+([^\n,]{5,60})/i,
+    // "We are hiring a Senior Software Engineer"
+    /(?:hiring|looking\s+for|seeking)\s+(?:a\s+|an\s+)?([A-Z][A-Za-z\s/()-]+(?:Engineer|Developer|Designer|Manager|Analyst|Architect|Lead|Director|Scientist|Specialist|Consultant|Coordinator))/i,
+    // First/second line pattern: "Senior Software Engineer" (standalone title)
+    /^((?:Senior|Junior|Lead|Staff|Principal|Chief|Head|VP|Director|Associate)?\s*(?:of\s+)?[A-Za-z\s/()]+(?:Engineer|Developer|Designer|Manager|Analyst|Architect|Lead|Director|Scientist|Product|Marketing))$/im,
+    // Generic role title on its own line
+    /^([A-Z][A-Za-z\s/()-]{10,50}(?:Engineer|Developer|Designer|Manager|Analyst|Architect|Director|Scientist|Specialist|Lead))$/m,
   ];
   for (const p of rolePatterns) {
     const m = jdText.match(p);
-    if (m) { role = m[1].trim(); break; }
+    if (m && m[1].trim().length > 3) {
+      role = m[1].trim().replace(/\s+/g, ' ');
+      break;
+    }
   }
 
-  // Extract skills by matching common tech keywords
-  const allSkills = [
-    'React', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Java', 'Go', 'Rust',
-    'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'MongoDB', 'PostgreSQL', 'MySQL',
-    'GraphQL', 'REST', 'Next.js', 'Vue', 'Angular', 'Tailwind', 'CSS', 'HTML',
-    'Redis', 'Kafka', 'RabbitMQ', 'Git', 'CI/CD', 'Terraform', 'Linux',
-    'Machine Learning', 'AI', 'NLP', 'Deep Learning', 'TensorFlow', 'PyTorch',
-    'Figma', 'Sketch', 'Product Management', 'Agile', 'Scrum', 'Jira',
-    'Express', 'Django', 'Flask', 'Spring', 'Ruby', 'Rails', 'Swift', 'Kotlin',
-    'SQL', 'NoSQL', 'Firebase', 'Supabase', 'Elasticsearch', 'C++', 'C#', '.NET'
-  ];
-  const foundSkills = allSkills.filter(s => lowerJD.includes(s.toLowerCase()));
-  const skills = foundSkills.length > 0 ? foundSkills.slice(0, 6) : ['JavaScript', 'React', 'Node.js'];
-  const niceToHave = foundSkills.length > 6 ? foundSkills.slice(6, 9) : ['Docker', 'AWS'];
+  // ========== SKILLS EXTRACTION ==========
+  const techSkills: Record<string, string> = {
+    'react': 'React', 'react.js': 'React', 'reactjs': 'React',
+    'typescript': 'TypeScript', 'javascript': 'JavaScript', 'python': 'Python',
+    'java': 'Java', 'golang': 'Go', 'go ': 'Go', 'rust': 'Rust', 'ruby': 'Ruby',
+    'c++': 'C++', 'c#': 'C#', '.net': '.NET', 'swift': 'Swift', 'kotlin': 'Kotlin',
+    'node.js': 'Node.js', 'nodejs': 'Node.js', 'node': 'Node.js',
+    'express': 'Express', 'express.js': 'Express',
+    'next.js': 'Next.js', 'nextjs': 'Next.js',
+    'vue': 'Vue.js', 'vue.js': 'Vue.js', 'angular': 'Angular', 'svelte': 'Svelte',
+    'aws': 'AWS', 'amazon web services': 'AWS',
+    'azure': 'Azure', 'gcp': 'GCP', 'google cloud': 'GCP',
+    'docker': 'Docker', 'kubernetes': 'Kubernetes', 'k8s': 'Kubernetes',
+    'terraform': 'Terraform', 'ansible': 'Ansible',
+    'mongodb': 'MongoDB', 'postgresql': 'PostgreSQL', 'postgres': 'PostgreSQL',
+    'mysql': 'MySQL', 'redis': 'Redis', 'elasticsearch': 'Elasticsearch',
+    'graphql': 'GraphQL', 'rest api': 'REST APIs', 'restful': 'REST APIs',
+    'tailwind': 'Tailwind CSS', 'tailwindcss': 'Tailwind CSS',
+    'css': 'CSS', 'html': 'HTML', 'sass': 'Sass', 'scss': 'Sass',
+    'git': 'Git', 'ci/cd': 'CI/CD', 'jenkins': 'Jenkins', 'github actions': 'GitHub Actions',
+    'kafka': 'Kafka', 'rabbitmq': 'RabbitMQ',
+    'machine learning': 'Machine Learning', 'deep learning': 'Deep Learning',
+    'tensorflow': 'TensorFlow', 'pytorch': 'PyTorch',
+    'nlp': 'NLP', 'natural language processing': 'NLP',
+    'llm': 'LLMs', 'large language model': 'LLMs',
+    'figma': 'Figma', 'sketch': 'Sketch',
+    'agile': 'Agile', 'scrum': 'Scrum', 'jira': 'Jira',
+    'sql': 'SQL', 'nosql': 'NoSQL',
+    'firebase': 'Firebase', 'supabase': 'Supabase',
+    'linux': 'Linux', 'unix': 'Unix',
+    'microservices': 'Microservices', 'api design': 'API Design',
+    'system design': 'System Design', 'data structures': 'Data Structures',
+    'algorithms': 'Algorithms',
+    'django': 'Django', 'flask': 'Flask', 'spring': 'Spring Boot',
+    'rails': 'Ruby on Rails',
+    'php': 'PHP', 'laravel': 'Laravel',
+  };
 
-  // Seniority detection
+  const foundSkills = new Set<string>();
+  for (const [keyword, name] of Object.entries(techSkills)) {
+    if (lowerJD.includes(keyword)) {
+      foundSkills.add(name);
+    }
+  }
+  const skills = Array.from(foundSkills).slice(0, 8);
+  if (skills.length === 0) skills.push('JavaScript', 'React', 'Node.js');
+
+  // Nice to have: look for "nice to have" / "bonus" / "preferred" sections
+  const niceToHaveSkills: string[] = [];
+  const niceSection = jdText.match(/(?:nice.to.have|bonus|preferred|plus|desired)[:\s]*\n?([\s\S]{20,500}?)(?:\n\n|\n[A-Z])/i);
+  if (niceSection) {
+    const sectionText = niceSection[1].toLowerCase();
+    for (const [keyword, name] of Object.entries(techSkills)) {
+      if (sectionText.includes(keyword) && !skills.includes(name)) {
+        niceToHaveSkills.push(name);
+      }
+    }
+  }
+  // Fallback: skills beyond the first 6
+  if (niceToHaveSkills.length === 0) {
+    const extras = Array.from(foundSkills).slice(6, 10);
+    niceToHaveSkills.push(...extras);
+  }
+
+  // ========== SENIORITY DETECTION ==========
   let seniority = 'Mid-Level';
-  if (lowerJD.includes('senior') || lowerJD.includes('lead') || lowerJD.includes('principal')) seniority = 'Senior';
-  else if (lowerJD.includes('junior') || lowerJD.includes('entry') || lowerJD.includes('intern')) seniority = 'Junior';
-  else if (lowerJD.includes('staff') || lowerJD.includes('architect')) seniority = 'Staff';
+  if (/\b(?:senior|sr\.?|lead)\b/i.test(jdText)) seniority = 'Senior';
+  else if (/\b(?:staff|principal|distinguished)\b/i.test(jdText)) seniority = 'Staff';
+  else if (/\b(?:junior|jr\.?|entry.level|intern|associate)\b/i.test(jdText)) seniority = 'Junior';
+  else if (/\b(?:director|vp|vice president|head of|chief)\b/i.test(jdText)) seniority = 'Executive';
+  else if (/\b(?:manager|engineering manager)\b/i.test(jdText)) seniority = 'Manager';
 
-  // Location detection
+  // ========== LOCATION DETECTION ==========
   let location = 'Not Specified';
-  if (lowerJD.includes('remote')) location = 'Remote';
-  else if (lowerJD.includes('hybrid')) location = 'Hybrid';
-  else if (lowerJD.includes('on-site') || lowerJD.includes('onsite')) location = 'On-site';
-  const cityMatch = jdText.match(/(?:located in|based in|location[:\s]+)([A-Za-z\s,]+)/i);
-  if (cityMatch) location = cityMatch[1].trim().split('\n')[0];
+  const locationPatterns = [
+    /location[:\s]+([^\n]{3,50})/i,
+    /(?:based in|located in|office in|headquarters in)\s+([^\n,.]{3,40})/i,
+    /\b((?:San Francisco|New York|NYC|Seattle|Austin|Chicago|Boston|Denver|Los Angeles|LA|London|Berlin|Toronto|Singapore|Bangalore|Hyderabad|Remote|Hybrid|On-?site)[A-Za-z\s,/()]*)/i,
+  ];
+  for (const p of locationPatterns) {
+    const m = jdText.match(p);
+    if (m) { location = m[1].trim(); break; }
+  }
+  // Append remote/hybrid flag if found
+  if (/\bremote\b/i.test(lowerJD) && !location.toLowerCase().includes('remote')) {
+    location += location !== 'Not Specified' ? ' (Remote Available)' : 'Remote';
+  } else if (/\bhybrid\b/i.test(lowerJD) && !location.toLowerCase().includes('hybrid')) {
+    location += location !== 'Not Specified' ? ' (Hybrid)' : 'Hybrid';
+  }
 
-  return { company, role, skills, niceToHave, seniority, location };
+  return { company, role, skills, niceToHave: niceToHaveSkills, seniority, location };
 };
 
-/** Intelligent mock suggestions based on actual parsed data */
+/** Generate role-specific resume suggestions from parsed data */
 const mockGenerateSuggestions = (parsedData: ParsedJD): string[] => {
-  const suggestions: string[] = [];
   const { skills, role, company, seniority } = parsedData;
+  const suggestions: string[] = [];
 
-  suggestions.push(
-    `Spearheaded development of production-grade applications using ${skills.slice(0, 3).join(', ')}, directly contributing to key business outcomes in a ${seniority.toLowerCase()}-level capacity.`
-  );
-  suggestions.push(
-    `Designed and implemented scalable ${skills[0] || 'full-stack'} architectures, reducing system latency by 40% and improving developer productivity across cross-functional teams.`
-  );
-  suggestions.push(
-    `Led end-to-end feature delivery for ${role}-related initiatives, collaborating with product, design, and engineering stakeholders to ship high-impact features on time.`
-  );
-  if (skills.length > 2) {
+  if (skills.length >= 2) {
     suggestions.push(
-      `Built robust CI/CD pipelines and automated testing frameworks using ${skills[1]} and ${skills[2]}, achieving 95%+ code coverage and reducing deployment failures by 60%.`
+      `Architected and delivered high-performance ${skills[0]} applications with ${skills[1]}, reducing page load times by 45% and improving user retention across the platform.`
     );
   }
+
   suggestions.push(
-    `Mentored junior engineers and contributed to technical documentation, fostering a culture of engineering excellence aligned with ${company}'s growth objectives.`
+    `Led cross-functional collaboration as a ${seniority} contributor to ship ${role}-related features, aligning with product roadmaps and driving measurable business outcomes at scale.`
+  );
+
+  if (skills.length >= 3) {
+    suggestions.push(
+      `Engineered robust backend services using ${skills[2]}${skills[3] ? ' and ' + skills[3] : ''}, processing 10M+ daily transactions with 99.9% uptime SLA compliance.`
+    );
+  }
+
+  suggestions.push(
+    `Mentored a team of 5+ engineers, establishing code review standards and CI/CD best practices that reduced deployment failures by 70% and accelerated sprint velocity.`
+  );
+
+  suggestions.push(
+    `Spearheaded technical design documents and architecture reviews for ${company}'s core product initiatives, directly influencing the engineering roadmap and reducing technical debt by 35%.`
   );
 
   return suggestions;
@@ -103,22 +194,23 @@ const mockGenerateSuggestions = (parsedData: ParsedJD): string[] => {
 
 export const parseJobDescription = async (jdText: string): Promise<ParsedJD> => {
   const openai = getOpenAIClient();
-  
+
   if (!openai) {
-    // No API key — use smart mock
     return mockParseJobDescription(jdText);
   }
 
-  const prompt = `Parse the following Job Description into JSON format. Extract these fields exactly:
-- "company": string (company name)
-- "role": string (job title)
-- "skills": string[] (required technical skills)
-- "niceToHave": string[] (nice-to-have skills)
-- "seniority": string (Junior, Mid-Level, Senior, Staff, Lead, etc.)
-- "location": string (city, remote, hybrid, etc.)
+  const prompt = `You are a job description parser. Parse the following Job Description and extract structured data.
 
-Return ONLY valid JSON with these exact keys.
-  
+Return a JSON object with these exact keys:
+- "company": string - the company name
+- "role": string - the exact job title
+- "skills": string[] - required technical skills (max 8)
+- "niceToHave": string[] - nice-to-have or preferred skills
+- "seniority": string - one of: "Junior", "Mid-Level", "Senior", "Staff", "Lead", "Manager", "Director", "Executive"
+- "location": string - job location including remote/hybrid info
+
+Return ONLY valid JSON, no other text.
+
 Job Description:
 ${jdText}`;
 
@@ -134,39 +226,39 @@ ${jdText}`;
       company: parsedContent.company || 'Unknown',
       role: parsedContent.role || 'Unknown',
       skills: parsedContent.skills || parsedContent['required skills'] || [],
-      niceToHave: parsedContent.niceToHave || parsedContent['nice-to-have skills'] || [],
+      niceToHave: parsedContent.niceToHave || parsedContent['nice-to-have skills'] || parsedContent.nice_to_have || [],
       seniority: parsedContent.seniority || 'Unknown',
       location: parsedContent.location || 'Unknown'
     };
   } catch (error: any) {
     console.error("OpenAI Parsing Error:", error?.message || error);
-    // Graceful fallback to mock on ANY API error (rate limit, network, etc.)
-    console.log("Falling back to intelligent mock parser...");
+    console.log("⚠ Falling back to intelligent local parser...");
     return mockParseJobDescription(jdText);
   }
 };
 
 export const generateResumeSuggestions = async (parsedData: ParsedJD): Promise<string[]> => {
   const openai = getOpenAIClient();
-  
+
   if (!openai) {
     return mockGenerateSuggestions(parsedData);
   }
 
-  const prompt = `Based on the following parsed job details:
+  const prompt = `You are a career coach. Based on these job details, generate 5 powerful resume bullet points.
+
 Company: ${parsedData.company}
 Role: ${parsedData.role}
 Required Skills: ${parsedData.skills.join(', ')}
 Nice-to-have: ${parsedData.niceToHave.join(', ')}
 Seniority: ${parsedData.seniority}
 
-Generate 4 to 5 resume bullet points tailored to this specific job. Each bullet should:
-- Start with a strong action verb
-- Include quantified impact where possible
-- Reference specific technologies from the skills list
-- Be specific to this role, not generic
+Each bullet must:
+- Start with a strong action verb (Led, Architected, Spearheaded, Engineered, etc.)
+- Include specific metrics and quantified impact
+- Reference at least one technology from the skills list
+- Be specific to this role, never generic
 
-Return ONLY a JSON object with key "suggestions" containing an array of strings.`;
+Return ONLY a JSON object: { "suggestions": ["bullet1", "bullet2", ...] }`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -179,8 +271,7 @@ Return ONLY a JSON object with key "suggestions" containing an array of strings.
     return content.suggestions || [];
   } catch (error: any) {
     console.error("OpenAI Suggestion Error:", error?.message || error);
-    // Graceful fallback to mock suggestions
-    console.log("Falling back to intelligent mock suggestions...");
+    console.log("⚠ Falling back to intelligent local suggestions...");
     return mockGenerateSuggestions(parsedData);
   }
 };
