@@ -4,6 +4,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import api from '../lib/api';
 import { ApplicationDetailModal } from './ApplicationDetailModal';
+import { useNotifications } from '../contexts/NotificationContext';
 
 const COLUMNS = ['Applied', 'Phone Screen', 'Interview', 'Offer', 'Rejected'];
 
@@ -105,6 +106,7 @@ function SortableCard({ id, card, onSelect, onDelete }: { id: string; card: any;
 }
 
 export function KanbanBoard({ applications, onOpenAI, refetchApps }: { applications: any[]; onOpenAI: () => void; refetchApps: () => void }) {
+  const { addNotification } = useNotifications();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeCard, setActiveCard] = useState<any>(null);
   const [selectedCard, setSelectedCard] = useState<any>(null);
@@ -116,8 +118,16 @@ export function KanbanBoard({ applications, onOpenAI, refetchApps }: { applicati
   const handleDelete = async (id: string) => {
     if (window.confirm("Delete this application forever?")) {
       try {
+        const target = applications.find(a => a._id === id);
         await api.delete(`/jobs/${id}`);
         refetchApps();
+        if (target) {
+          addNotification({
+            type: 'app_deleted',
+            title: 'Application Removed',
+            message: `${target.role} role at ${target.company} has been deleted.`
+          });
+        }
       } catch (e) {
         console.error("Failed to delete", e);
       }
@@ -156,6 +166,11 @@ export function KanbanBoard({ applications, onOpenAI, refetchApps }: { applicati
       try {
         await api.put(`/jobs/${active.id}`, { status: newStatus });
         refetchApps();
+        addNotification({
+          type: 'status_change',
+          title: 'Status Updated',
+          message: `${draggedCard.company} moved to ${newStatus}`
+        });
       } catch (error) {
         console.error("Failed to update status", error);
       }

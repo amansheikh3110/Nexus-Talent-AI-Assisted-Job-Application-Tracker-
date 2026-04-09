@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import api from '../lib/api';
+import { useNotifications } from '../contexts/NotificationContext';
 
 export function ApplicationDetailModal({ application, onClose, onDelete, refetchApps }: { application: any; onClose: () => void; onDelete: () => void; refetchApps: () => void }) {
+  const { addNotification } = useNotifications();
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(application.notes || '');
 
@@ -9,8 +11,14 @@ export function ApplicationDetailModal({ application, onClose, onDelete, refetch
 
   const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     try {
-      await api.put(`/jobs/${application._id}`, { status: e.target.value });
+      const newStatus = e.target.value;
+      await api.put(`/jobs/${application._id}`, { status: newStatus });
       refetchApps();
+      addNotification({
+        type: 'status_change',
+        title: 'Status Updated',
+        message: `${application.company} status changed to ${newStatus}.`
+      });
     } catch (err) {
       console.error(err);
     }
@@ -21,6 +29,11 @@ export function ApplicationDetailModal({ application, onClose, onDelete, refetch
       await api.put(`/jobs/${application._id}`, { notes });
       refetchApps();
       setEditingNotes(false);
+      addNotification({
+        type: 'info',
+        title: 'Notes Saved',
+        message: `Application notes updated for ${application.company}.`
+      });
     } catch (err) {
       console.error(err);
     }

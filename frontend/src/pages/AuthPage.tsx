@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../lib/api';
+import { useNotifications } from '../contexts/NotificationContext';
 
 export function AuthPage({ isLogin }: { isLogin: boolean }) {
   const { login } = useAuth();
+  const { addNotification } = useNotifications();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,16 +18,27 @@ export function AuthPage({ isLogin }: { isLogin: boolean }) {
     setError('');
     setLoading(true);
     try {
+      let loggedInEmail = email;
+      let isNewUser = false;
       if (isLogin) {
         const { data } = await api.post('/auth/login', { email, password });
         login(data.token, data.email);
-        navigate('/');
+        loggedInEmail = data.email;
       } else {
         await api.post('/auth/register', { email, password });
         const { data } = await api.post('/auth/login', { email, password });
         login(data.token, data.email);
-        navigate('/');
+        loggedInEmail = data.email;
+        isNewUser = true;
       }
+      
+      addNotification({
+        type: 'welcome',
+        title: 'Welcome to Nexus Talent',
+        message: isNewUser ? 'Your career strategy board is ready.' : `Welcome back, ${loggedInEmail.split('@')[0]}!`,
+      });
+      
+      navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Authentication failed');
     } finally {

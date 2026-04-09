@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../lib/api';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface ParsedData {
   company: string;
@@ -13,6 +14,7 @@ interface ParsedData {
 }
 
 export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { addNotification } = useNotifications();
   const [jdText, setJdText] = useState('');
   const [loading, setLoading] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
@@ -32,6 +34,12 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
       // Now get suggestions
       const suggRes = await api.post('/ai/suggestions', { parsedData: parsedResult });
       setParsedData({ ...parsedResult, suggestions: suggRes.data.suggestions });
+      
+      addNotification({
+        type: 'ai_parse',
+        title: 'AI Analysis Complete',
+        message: `Successfully structured the ${parsedResult.role || 'role'} at ${parsedResult.company || 'company'} from the provided text.`
+      });
     } catch (err: any) {
       console.error("Parse failed", err);
       setError(err.response?.data?.error || 'AI processing failed. Please try again.');
@@ -54,6 +62,13 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
         aiSuggestions: parsedData.suggestions,
         status: 'Applied'
       });
+      
+      addNotification({
+        type: 'app_created',
+        title: 'Strategy Curated',
+        message: `Your application for ${parsedData.role} at ${parsedData.company} is now live.`
+      });
+      
       setShowSuccess(true);
       setTimeout(() => {
         closeFully();
