@@ -22,12 +22,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Redirects authenticated users away from login/register pages */
+function GuestRoute({ children }: { children: React.ReactNode }) {
+  const { token, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (token) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<AuthPage isLogin={true} />} />
-        <Route path="/register" element={<AuthPage isLogin={false} />} />
+        <Route path="/login" element={<GuestRoute><AuthPage isLogin={true} /></GuestRoute>} />
+        <Route path="/register" element={<GuestRoute><AuthPage isLogin={false} /></GuestRoute>} />
         <Route path="/" element={
           <ProtectedRoute>
             <Dashboard />
