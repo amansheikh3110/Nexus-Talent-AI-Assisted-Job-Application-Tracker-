@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background font-body text-on-surface antialiased;
+  }
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.glass-panel {
+  background: rgba(11, 12, 14, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.milled-gradient {
+  background: linear-gradient(135deg, #1e40af 0%, #6b38d4 100%);
+}
+
+.violet-glow {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.ai-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px);
+}
+
+.milled-button {
+  background: linear-gradient(135deg, #00288e 0%, #1e40af 100%);
+}
+
+.ai-gradient {
+  background: linear-gradient(135deg, #00288e 0%, #1e40af 100%);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
