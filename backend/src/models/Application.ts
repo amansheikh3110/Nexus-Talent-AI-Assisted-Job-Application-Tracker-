@@ -10,6 +10,7 @@ export interface IApplication extends Document {
   notes?: string;
   salaryRange?: string;
   aiSuggestions?: string[];
+  followUpDate?: Date;
 }
 
 const ApplicationSchema = new Schema<IApplication>({
@@ -25,7 +26,8 @@ const ApplicationSchema = new Schema<IApplication>({
   jdLink: { type: String },
   notes: { type: String },
   salaryRange: { type: String },
-  aiSuggestions: [{ type: String }]
+  aiSuggestions: [{ type: String }],
+  followUpDate: { type: Date }
 }, { timestamps: true });
 
 export default mongoose.model<IApplication>('Application', ApplicationSchema);

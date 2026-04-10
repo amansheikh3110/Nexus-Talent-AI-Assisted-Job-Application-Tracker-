@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Dashboard } from './pages/Dashboard';
-import { AuthPage } from './pages/AuthPage';
+import { BoardPage } from './pages/BoardPage.tsx';
+import { Dashboard } from './pages/Dashboard.tsx';
+import { AuthPage } from './pages/AuthPage.tsx';
+import { ProfilePage } from './pages/ProfilePage.tsx';
 import { useAuth } from './contexts/AuthContext';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -38,7 +40,16 @@ function App() {
         <Route path="/register" element={<GuestRoute><AuthPage isLogin={false} /></GuestRoute>} />
         <Route path="/" element={
           <ProtectedRoute>
-            <Dashboard />
+            <BoardPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
           </ProtectedRoute>
         } />
       </Routes>

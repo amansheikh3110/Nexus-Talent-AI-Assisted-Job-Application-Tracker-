@@ -1,49 +1,50 @@
 # 🚀 Nexus Talent: AI-Assisted Job Application Tracker
 
-**Nexus Talent** is a state-of-the-art, premium job application management platform. Built for high-performance job seekers, it leverages Artificial Intelligence to transform chaotic job hunts into structured, data-driven career strategies.
+**Nexus Talent** is a state-of-the-art, premium job application management platform. Built for high-performance job seekers and executive architects, it leverages Artificial Intelligence to transform chaotic job hunts into structured, data-driven career strategies.
 
 ![Premium UI Showcase](frontend/public/dashboard_preview.png)
-*(Note: Replace with actual screenshot path if available)*
 
 ---
 
 ## ✨ Key Features
 
 ### 🧠 Architect AI Module
-Parsing job descriptions is a thing of the past. Simply paste the text, and our AI will:
+Parsing job descriptions is a thing of the past. Using advanced LLM orchestration via **Gemini/OpenRouter**, our AI will:
 - **Extract Market Signals**: Automatically identify Company, Role, Seniority, and Location.
 - **Skill Extraction**: Generate a clean list of required vs. nice-to-have technical skills.
 - **Resume Optimization**: Generate 5 metric-driven, high-impact bullet points tailored specifically to that job description to help you beat the ATS.
 
-### 🛡️ Resilient AI Infrastructure
-Never worry about API rate limits or downtime.
-- **Cascading Fallbacks**: Built with a service-oriented architecture that automatically cycles through multiple free AI models (Mistral, Llama, Qwen, etc.) via OpenRouter if the primary model fails.
-- **Zero-Crash Design**: Graceful error handling for network failures or malformed AI responses.
+### 📋 Strategy Board (Digital Kanban)
+A fluid, drag-and-drop interface powered by `@dnd-kit` designed for executive-level oversight:
+- **Interactive Funnel**: Move applications through stages from *Applied* to *Offer*.
+- **Real-time Search & Filter**: Instant local search by company or role to manage large pipelines.
+- **Follow-up Reminders**: Set specific follow-up dates and receive **pulsing "Overdue" alerts** on cards when strategic connections are missed.
 
-### 📋 Strategy Board (Kanban)
-A fluid, drag-and-drop interface powered by `@dnd-kit`:
-- **Interactive Funnel**: Move applications through stages: *Applied*, *Phone Screen*, *Interviewing*, *Offer*, and *Rejected*.
-- **Visual Intelligence**: Status badges and adaptive color-coding ensure you never miss a follow-up.
+### 📊 Executive Overview (Dashboard)
+Gain deep insights into your career progression with a data-rich dashboard:
+- **Pipeline Velocity**: Visual progress tracking across all application stages.
+- **Recent Signals**: A live feed of the latest updates and activity in your job search.
+- **AI Strategy Generator**: Real-time recommendations based on your pipeline density and converted offers.
+
+### 👤 Executive Profile & Data Portability
+- **Professional Identity**: Manage your professional bio and mission statement to contextualize AI suggestions.
+- **CSV Export**: Industry-standard data portability—download your entire application history as a readable CSV at any time.
 
 ---
 
 ## 🛠️ Technical Stack
 
 - **Frontend**: 
-  - React 19 + Vite
-  - Tailwind CSS 3 (Premium Glassmorphism Design)
-  - Framer Motion (Micro-animations)
-  - TanStack Query v5 (Server State Management)
-  - dnd-kit (Kanban Logic)
+  - **Core**: React 19 + Vite + TypeScript
+  - **Design**: Tailwind CSS 3 (Premium Glassmorphism & Custom Variable Design System)
+  - **Motion**: Framer Motion (Bespoke micro-animations)
+  - **State**: TanStack Query v5 (Server State) + Context API (Global Profile & Auth)
+  - **UX**: Lucide React + Radix UI (Primitives)
 - **Backend**: 
-  - Node.js + Express
-  - TypeScript
-  - MongoDB (Mongoose)
-  - OpenRouter API (AI Orchestration)
-- **Security**: 
-  - JWT Authentication
-  - Bcrypt Password Hashing
-  - Environment-isolated API Keys
+  - **Runtime**: Node.js + Express
+  - **Intelligence**: Gemini Pro / LLM Orchestration via OpenRouter
+  - **Database**: MongoDB (Mongoose ODM)
+  - **Security**: JWT Authentication + Bcrypt Encryption
 
 ---
 
@@ -81,25 +82,26 @@ npm run dev
 ```text
 ├── backend
 │   ├── src
-│   │   ├── services/    # AI Orchestration & Business Logic
-│   │   ├── routes/      # Express Endpoint Handlers
-│   │   ├── models/      # MongoDB Schemas
-│   │   └── middleware/  # Auth & Security
+│   │   ├── services/    # AI Orchestration, Prompt Engineering & Business Logic
+│   │   ├── routes/      # Express Endpoint Handlers (Auth, Jobs, User Profile)
+│   │   ├── models/      # MongoDB Schemas (Application, User)
+│   │   └── middleware/  # Auth Guards & Security
 ├── frontend
 │   ├── src
-│   │   ├── components/  # Atomic UI & Smart Components
-│   │   ├── pages/       # View Layouts
+│   │   ├── components/  # Smart Components, Kanban Board, AI Modals
+│   │   ├── pages/       # View Layouts (Dashboard, Board, Profile, Auth)
 │   │   ├── lib/         # API (Axios) Configuration
-│   │   └── contexts/    # Auth & Notification State
+│   │   └── contexts/    # Global State (Auth, Notifications, Theme)
 ```
 
 ---
 
 ## 📜 Architectural Decisions
 
-- **Service Layer Abstraction**: AI logic is completely isolated from HTTP routes, allowing for easy model swapping or testing.
-- **Custom Design System**: Instead of generic UI libraries, we use a bespoke design system with CSS variables for seamless dark/light mode transitions.
-- **Global Error Interceptors**: Centrally managed axios response interceptors handle session expiry and network failures across the entire app.
+- **Service-Oriented AI Layer**: AI logic is isolated from HTTP routes, supporting cascading fallbacks across multiple LLM models if the primary provider is unavailable.
+- **Persistent Global Notification System**: A custom-built notification engine that persists user activity across sessions in localStorage.
+- **Atomic Components**: A focus on reusable, logic-less UI primitives paired with high-level orchestrator components (KanbanGrid, StatsOverview).
+- **Executive Aesthetics**: A design language centered on low-latency interactions, glassmorphism, and a tailored HSL-based color system.
 
 ---
 

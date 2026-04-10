@@ -3,6 +3,9 @@ import api from '../lib/api';
 
 interface User {
   email: string;
+  fullName?: string;
+  bio?: string;
+  avatarUrl?: string;
 }
 
 interface AuthContextType {
@@ -11,6 +14,7 @@ interface AuthContextType {
   login: (token: string, email: string) => void;
   logout: () => void;
   isLoading: boolean;
+  refetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,10 +29,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedEmail = localStorage.getItem('email');
     if (storedToken && storedEmail) {
       setToken(storedToken);
+      // Initialize with email, then refetch full profile
       setUser({ email: storedEmail });
+      refetchUser(storedToken);
     }
     setIsLoading(false);
   }, []);
+
+  const refetchUser = async (explicitToken?: string) => {
+    const activeToken = explicitToken || token;
+    if (!activeToken) return;
+
+    try {
+      const { data } = await api.get('/user/me');
+      setUser(data);
+    } catch (err) {
+      console.error("Failed to refetch user", err);
+    }
+  };
 
   const login = (newToken: string, email: string) => {
     localStorage.setItem('token', newToken);
@@ -45,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isLoading, refetchUser }}>
       {children}
     </AuthContext.Provider>
   );

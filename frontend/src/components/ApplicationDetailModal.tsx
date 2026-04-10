@@ -7,6 +7,7 @@ export function ApplicationDetailModal({ application, onClose, onDelete, refetch
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(application.notes || '');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [followUpDate, setFollowUpDate] = useState(application.followUpDate ? application.followUpDate.split('T')[0] : '');
 
   if (!application) return null;
 
@@ -44,6 +45,22 @@ export function ApplicationDetailModal({ application, onClose, onDelete, refetch
     navigator.clipboard.writeText(text);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const handleFollowUpChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setFollowUpDate(newDate);
+    try {
+      await api.put(`/jobs/${application._id}`, { followUpDate: newDate });
+      refetchApps();
+      addNotification({
+        type: 'info',
+        title: 'Reminder Set',
+        message: `Follow-up date updated for ${application.company}.`
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -116,11 +133,15 @@ export function ApplicationDetailModal({ application, onClose, onDelete, refetch
                 <p className="text-xl font-bold font-headline">{application.salaryRange || 'Not specified'}</p>
               </div>
               <div className="bg-surface-container-lowest p-6 rounded-lg shadow-sm border border-outline-variant/10">
-                <p className="text-on-surface-variant text-xs font-label uppercase tracking-widest mb-2">Location</p>
-                <p className="text-xl font-bold font-headline">
-                  {/* Extract location from notes if available */}
-                  {application.notes?.match(/Location:\s*([^\n]+)/)?.[1] || 'Not specified'}
-                </p>
+                <p className="text-on-surface-variant text-xs font-label uppercase tracking-widest mb-2">Follow-up Reminder</p>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={followUpDate}
+                    onChange={handleFollowUpChange}
+                    className="w-full bg-surface-container-highest text-on-surface font-bold py-2 px-3 rounded-lg border-none focus:ring-2 ring-secondary/40 font-label text-sm outline-none"
+                  />
+                </div>
               </div>
             </div>
 

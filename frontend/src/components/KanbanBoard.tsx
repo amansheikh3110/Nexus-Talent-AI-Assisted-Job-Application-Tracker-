@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DndContext, DragOverlay, closestCorners, useSensor, useSensors, PointerSensor, useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -44,6 +44,7 @@ function SortableCard({ id, card, onSelect, onDelete }: { id: string; card: any;
   };
 
   const bdColor = getColumnBorderColor(card.status);
+  const isOverdue = card.followUpDate && new Date(card.followUpDate) < new Date() && !['Rejected', 'Offer'].includes(card.status);
 
   return (
     <div
@@ -51,21 +52,28 @@ function SortableCard({ id, card, onSelect, onDelete }: { id: string; card: any;
       style={style}
       {...attributes}
       {...listeners}
-      className={`group relative bg-surface-container-lowest p-5 rounded-lg shadow-sm border-l-4 ${bdColor} hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'ring-2 ring-secondary' : ''} ${card.status === 'Rejected' ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0' : ''}`}
+      className={`group relative bg-surface-container-lowest p-5 rounded-lg shadow-sm border-l-4 ${bdColor} hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'ring-2 ring-secondary' : ''} ${card.status === 'Rejected' ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0' : ''} ${isOverdue ? 'ring-2 ring-error/50' : ''}`}
     >
       <div className="flex justify-between items-start mb-3">
         <div className="w-8 h-8 rounded bg-slate-50 flex items-center justify-center font-bold text-primary font-headline text-sm">
           {card.company?.charAt(0) || '?'}
         </div>
-        {card.status === 'Offer' && (
-          <span className="text-[10px] font-bold py-1 px-2 rounded bg-secondary text-white uppercase tracking-wider animate-pulse">Offered</span>
-        )}
-        {card.status === 'Phone Screen' && (
-          <span className="text-[10px] font-bold py-1 px-2 rounded bg-tertiary-container text-on-tertiary-container uppercase tracking-wider">Action</span>
-        )}
-        {card.status === 'Interview' && (
-          <span className="text-[10px] font-bold py-1 px-2 rounded bg-primary-container text-on-primary-container uppercase tracking-wider">Interview</span>
-        )}
+        <div className="flex flex-col items-end gap-1">
+          {isOverdue && (
+            <span className="text-[9px] font-black py-0.5 px-1.5 rounded bg-error text-white uppercase tracking-tighter flex items-center gap-0.5 animate-pulse">
+              <span className="material-symbols-outlined text-[10px]">priority_high</span> Overdue
+            </span>
+          )}
+          {card.status === 'Offer' && (
+            <span className="text-[10px] font-bold py-1 px-2 rounded bg-secondary text-white uppercase tracking-wider animate-pulse">Offered</span>
+          )}
+          {card.status === 'Phone Screen' && (
+            <span className="text-[10px] font-bold py-1 px-2 rounded bg-tertiary-container text-on-tertiary-container uppercase tracking-wider">Action</span>
+          )}
+          {card.status === 'Interview' && (
+            <span className="text-[10px] font-bold py-1 px-2 rounded bg-primary-container text-on-primary-container uppercase tracking-wider">Interview</span>
+          )}
+        </div>
       </div>
 
       <h3 className="font-headline font-bold text-lg text-on-surface leading-tight group-hover:text-primary transition-colors">
@@ -73,7 +81,14 @@ function SortableCard({ id, card, onSelect, onDelete }: { id: string; card: any;
       </h3>
       <p className="font-body text-sm text-on-surface-variant mb-3">{card.role}</p>
 
-      {card.notes && (
+      {card.followUpDate && (
+        <div className={`mb-3 py-1 px-2 rounded flex items-center gap-1.5 text-[11px] font-bold ${isOverdue ? 'bg-error/10 text-error' : 'bg-surface-container text-on-surface-variant'}`}>
+          <span className="material-symbols-outlined text-sm">{isOverdue ? 'notification_important' : 'event_available'}</span>
+          <span>Follow up: {new Date(card.followUpDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+        </div>
+      )}
+
+      {card.notes && !card.followUpDate && (
         <div className="mb-3 p-3 rounded-lg bg-secondary-fixed/20 border border-secondary/10">
           <p className="text-[11px] text-secondary font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
             <span className="material-symbols-outlined text-xs">insights</span> AI Note
@@ -110,6 +125,40 @@ export function KanbanBoard({ applications, onOpenAI, refetchApps }: { applicati
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeCard, setActiveCard] = useState<any>(null);
   const [selectedCard, setSelectedCard] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredApps = applications.filter(app => 
+    app.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    app.role?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const exportToCSV = () => {
+    const headers = ['Company', 'Role', 'Status', 'Date Applied', 'Follow-up Date', 'Notes'];
+    const rows = applications.map(app => [
+      app.company,
+      app.role,
+      app.status,
+      new Date(app.dateApplied).toLocaleDateString(),
+      app.followUpDate ? new Date(app.followUpDate).toLocaleDateString() : 'N/A',
+      app.notes?.replace(/[\n\r]/g, ' ') || ''
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `applications_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  useEffect(() => {
+    (window as any).exportData = exportToCSV;
+    return () => { delete (window as any).exportData; };
+  }, [applications]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -186,6 +235,23 @@ export function KanbanBoard({ applications, onOpenAI, refetchApps }: { applicati
           <p className="text-on-surface-variant font-body">Curating your path to the next executive milestone.</p>
         </div>
         <div className="flex gap-3">
+          <div className="flex items-center bg-surface-container rounded-lg px-3 py-2 w-64 group focus-within:ring-2 ring-secondary/40 transition-all">
+            <span className="material-symbols-outlined text-on-surface-variant text-sm mr-2">search</span>
+            <input 
+              className="bg-transparent border-none focus:ring-0 text-sm w-full font-label text-on-surface placeholder:text-on-surface-variant outline-none" 
+              placeholder="Filter by company or role..." 
+              type="text" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={exportToCSV}
+            className="px-4 py-2 bg-surface-container-high text-primary font-bold rounded-lg flex items-center gap-2 hover:bg-primary-fixed transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-lg">download</span>
+            <span className="hidden lg:inline">Export</span>
+          </button>
           <button
             onClick={onOpenAI}
             className="px-5 py-2.5 milled-gradient text-white font-bold rounded-lg flex items-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
@@ -212,7 +278,7 @@ export function KanbanBoard({ applications, onOpenAI, refetchApps }: { applicati
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 items-start pb-20">
           {COLUMNS.map(col => {
-            const colApps = applications.filter(app => app.status === col);
+            const colApps = filteredApps.filter(app => app.status === col);
             return (
               <div key={col}>
                 <div className="flex items-center justify-between px-2 mb-3">

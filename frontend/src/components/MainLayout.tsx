@@ -19,8 +19,10 @@ export function MainLayout({ children, onAddApplication }: MainLayoutProps) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const isBoard = location.pathname === '/';
-  const userInitial = user?.email?.charAt(0)?.toUpperCase() || 'U';
-  const userName = user?.email?.split('@')[0] || 'User';
+  const isDashboard = location.pathname === '/dashboard';
+  const isProfile = location.pathname === '/profile';
+  const userInitial = user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U';
+  const userName = user?.fullName || user?.email?.split('@')[0] || 'User';
 
   const closeAll = () => { setSettingsOpen(false); setNotificationsOpen(false); setProfileOpen(false); };
 
@@ -40,10 +42,10 @@ export function MainLayout({ children, onAddApplication }: MainLayoutProps) {
             <Link to="/" className={`flex items-center gap-3 px-4 py-3 transition-colors duration-200 font-headline font-semibold tracking-tight rounded-lg ${isBoard ? 'text-primary border-l-4 border-secondary bg-surface-container-lowest' : 'text-on-surface-variant hover:bg-surface-container border-l-4 border-transparent'}`}>
               <span className="material-symbols-outlined">view_kanban</span><span>Board</span>
             </Link>
-            <Link to="#" className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors duration-200 font-headline font-semibold tracking-tight border-l-4 border-transparent">
+            <Link to="/dashboard" className={`flex items-center gap-3 px-4 py-3 transition-colors duration-200 font-headline font-semibold tracking-tight rounded-lg ${isDashboard ? 'text-primary border-l-4 border-secondary bg-surface-container-lowest' : 'text-on-surface-variant hover:bg-surface-container border-l-4 border-transparent'}`}>
               <span className="material-symbols-outlined">dashboard</span><span>Dashboard</span>
             </Link>
-            <Link to="#" className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors duration-200 font-headline font-semibold tracking-tight border-l-4 border-transparent">
+            <Link to="/profile" className={`flex items-center gap-3 px-4 py-3 transition-colors duration-200 font-headline font-semibold tracking-tight rounded-lg ${isProfile ? 'text-primary border-l-4 border-secondary bg-surface-container-lowest' : 'text-on-surface-variant hover:bg-surface-container border-l-4 border-transparent'}`}>
               <span className="material-symbols-outlined">person</span><span>Profile</span>
             </Link>
           </nav>
@@ -176,15 +178,15 @@ export function MainLayout({ children, onAddApplication }: MainLayoutProps) {
                     </div>
                   </button>
                   <div className="h-px bg-outline-variant/20 my-1"></div>
-                  <button className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-container transition-colors cursor-pointer text-left">
+                  <Link to="/profile" onClick={closeAll} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-container transition-colors cursor-pointer text-left">
                     <span className="material-symbols-outlined text-on-surface-variant text-[20px]">account_circle</span>
                     <span className="text-sm font-medium text-on-surface">Account Settings</span>
-                  </button>
+                  </Link>
                   <button className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-container transition-colors cursor-pointer text-left">
                     <span className="material-symbols-outlined text-on-surface-variant text-[20px]">vpn_key</span>
                     <span className="text-sm font-medium text-on-surface">API Configuration</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-container transition-colors cursor-pointer text-left">
+                  <button onClick={() => { (window as any).exportData(); closeAll(); }} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-container transition-colors cursor-pointer text-left">
                     <span className="material-symbols-outlined text-on-surface-variant text-[20px]">download</span>
                     <span className="text-sm font-medium text-on-surface">Export Data (CSV)</span>
                   </button>
@@ -212,9 +214,9 @@ export function MainLayout({ children, onAddApplication }: MainLayoutProps) {
                   </div>
                 </div>
                 <div className="p-2">
-                  <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-container transition-colors cursor-pointer text-left">
+                  <Link to="/profile" onClick={closeAll} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-container transition-colors cursor-pointer text-left">
                     <span className="material-symbols-outlined text-on-surface-variant text-[18px]">person</span><span className="text-sm text-on-surface">View Profile</span>
-                  </button>
+                  </Link>
                   <button onClick={() => { logout(); closeAll(); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-error-container/30 transition-colors cursor-pointer text-left">
                     <span className="material-symbols-outlined text-error text-[18px]">logout</span><span className="text-sm text-error">Sign Out</span>
                   </button>
