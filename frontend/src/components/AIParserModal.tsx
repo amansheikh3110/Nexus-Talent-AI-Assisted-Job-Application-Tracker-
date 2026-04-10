@@ -22,11 +22,16 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [showSlowWarning, setShowSlowWarning] = useState(false);
 
   const handleParse = async () => {
     if (!jdText.trim()) return;
     setLoading(true);
+    setShowSlowWarning(false);
     setError('');
+    
+    // Set a timeout to show a message if parsing takes longer than usual (due to model switching)
+    const slowTimer = setTimeout(() => setShowSlowWarning(true), 6000);
 
     try {
       const res = await api.post('/ai/parse', { jdText });
@@ -45,7 +50,9 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
       console.error("Parse failed", err);
       setError(err.response?.data?.error || 'AI processing failed. Please try again.');
     } finally {
+      clearTimeout(slowTimer);
       setLoading(false);
+      setShowSlowWarning(false);
     }
   };
 
@@ -154,8 +161,12 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 {loading ? (
                   <div className="h-80 bg-surface-container-low rounded-lg p-6 flex flex-col items-center justify-center text-center border border-outline-variant/10">
                     <div className="w-16 h-16 border-4 border-secondary/20 border-t-secondary rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(107,56,212,0.3)]"></div>
-                    <p className="font-headline font-bold text-on-surface text-lg">Synchronizing AI Agents...</p>
-                    <p className="text-sm text-on-surface-variant mt-1">Extracting market signals and cultural fit indicators.</p>
+                    <p className="font-headline font-bold text-on-surface text-lg">
+                      {showSlowWarning ? "AI is attempting fallback models..." : "Synchronizing AI Agents..."}
+                    </p>
+                    <p className="text-sm text-on-surface-variant mt-1">
+                      {showSlowWarning ? "Network or processing took longer than usual. Please hold tight!" : "Extracting market signals and cultural fit indicators."}
+                    </p>
                   </div>
                 ) : (
                   <>
