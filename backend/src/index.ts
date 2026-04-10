@@ -19,8 +19,8 @@ app.use('/api/jobs', applicationRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/user', userRoutes);
 
-app.get('/', (req, res) => {
-  res.send('AI Job Tracker API is running');
+app.get('/api/health', (req, res) => {
+  res.send('✅ AI Job Tracker API is healthy and running');
 });
 
 const PORT = process.env.PORT || 5000;
