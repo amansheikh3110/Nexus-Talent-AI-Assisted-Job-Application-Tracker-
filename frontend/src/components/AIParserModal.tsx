@@ -21,6 +21,7 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const handleParse = async () => {
     if (!jdText.trim()) return;
@@ -89,8 +90,10 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
     onClose();
   };
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, index: number) => {
     navigator.clipboard.writeText(text);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
   if (!isOpen) return null;
@@ -260,10 +263,20 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                         <p className="text-sm text-on-surface leading-relaxed">{sugg}</p>
                         <div className="mt-3 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => copyToClipboard(sugg)}
+                            onClick={() => copyToClipboard(sugg, i)}
                             className="text-xs font-bold text-primary flex items-center gap-1 px-3 py-1.5 bg-primary/5 rounded-lg hover:bg-primary/10 transition cursor-pointer"
                           >
-                            <span className="material-symbols-outlined text-sm">content_copy</span> Copy
+                            {copiedIndex === i ? (
+                              <>
+                                <span className="material-symbols-outlined text-sm text-secondary">check</span> 
+                                <span className="text-secondary">Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="material-symbols-outlined text-sm">content_copy</span> 
+                                <span>Copy</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>

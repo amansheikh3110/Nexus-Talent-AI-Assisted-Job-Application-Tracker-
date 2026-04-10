@@ -6,6 +6,7 @@ export function ApplicationDetailModal({ application, onClose, onDelete, refetch
   const { addNotification } = useNotifications();
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(application.notes || '');
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   if (!application) return null;
 
@@ -39,8 +40,10 @@ export function ApplicationDetailModal({ application, onClose, onDelete, refetch
     }
   };
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, index: number) => {
     navigator.clipboard.writeText(text);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
   return (
@@ -203,11 +206,13 @@ export function ApplicationDetailModal({ application, onClose, onDelete, refetch
                         <div className="flex justify-between items-start gap-3 mb-2">
                           <p className="text-sm font-medium leading-relaxed">"{sugg}"</p>
                           <button
-                            onClick={() => copyToClipboard(sugg)}
-                            className="p-2 bg-surface-container-high rounded text-primary hover:bg-primary-fixed transition-all shrink-0 cursor-pointer"
-                            title="Copy to clipboard"
+                            onClick={() => copyToClipboard(sugg, i)}
+                            className={`p-2 rounded transition-all shrink-0 cursor-pointer flex items-center justify-center min-w-[32px] ${copiedIndex === i ? 'bg-secondary/10 text-secondary' : 'bg-surface-container-high text-primary hover:bg-primary-fixed'}`}
+                            title={copiedIndex === i ? "Copied!" : "Copy to clipboard"}
                           >
-                            <span className="material-symbols-outlined text-sm">content_copy</span>
+                            <span className="material-symbols-outlined text-sm">
+                              {copiedIndex === i ? 'check' : 'content_copy'}
+                            </span>
                           </button>
                         </div>
                         <div className="h-px w-full bg-outline-variant opacity-20"></div>
