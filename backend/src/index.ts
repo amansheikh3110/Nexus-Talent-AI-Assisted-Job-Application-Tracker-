@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import connectDB from './lib/db';
 import authRoutes from './routes/auth';
 import applicationRoutes from './routes/applications';
 import aiRoutes from './routes/ai';
@@ -24,14 +24,16 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/job-tracker';
-console.log(MONGO_URI);
 
-mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-  });
+// Startup logic
+if (require.main === module) {
+  connectDB()
+    .then(() => {
+      app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    })
+    .catch((err) => {
+      console.error('❌ Failed to start server:', err);
+    });
+}
+
+export default app;
