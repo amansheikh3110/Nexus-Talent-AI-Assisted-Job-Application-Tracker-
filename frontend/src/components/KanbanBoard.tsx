@@ -188,7 +188,7 @@ export function KanbanBoard({ applications, onOpenAI, refetchApps }: { applicati
         <div className="flex gap-3">
           <button
             onClick={onOpenAI}
-            className="px-5 py-2.5 bg-secondary text-white font-bold rounded-lg flex items-center gap-2 shadow-lg shadow-secondary/20 hover:scale-[1.02] active:scale-95 transition-all"
+            className="px-5 py-2.5 milled-gradient text-white font-bold rounded-lg flex items-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-lg">auto_awesome</span>
             <span>AI Smart Entry</span>

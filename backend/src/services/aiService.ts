@@ -18,7 +18,7 @@ const getOpenRouterClient = () => {
   if (!apiKey || apiKey === 'YOUR_OPENROUTER_API_KEY') {
     throw new Error("Missing OpenRouter API Key in environment variables.");
   }
-  
+
   return new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey,
@@ -68,19 +68,30 @@ Job Description:
 ${jdText}`;
 
   try {
+    const modelUsed = "nvidia/nemotron-3-super-120b-a12b:free";
+    console.log(`\n[AI Parser] 🧠 Initiating Job Description Parse...`);
+    console.log(`[AI Parser] 🤖 Model: ${modelUsed}`);
+    console.log(`[AI Parser] ⏳ Waiting for OpenRouter response...`);
+
+    const startTime = Date.now();
     const response = await openrouter.chat.completions.create({
       // Using a free model on OpenRouter:
-      model: "google/gemini-2.5-flash-free", // Alternatives: meta-llama/llama-3-8b-instruct:free
+      model: modelUsed, // Alternatives: meta-llama/llama-3-8b-instruct:free
       messages: [{ role: "user", content: prompt }],
       // response_format: { type: "json_object" } // Some free models don't support JSON mode perfectly, we enforce it via prompting
     });
 
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[AI Parser] ✅ Success! Parsed in ${elapsed}s`);
+
     let content = response.choices[0].message.content || '{}';
     // Clean up potential markdown formatting wrappers returned by some free models
     content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-    
+
     const parsedContent = JSON.parse(content);
-    
+
+    console.log(`[AI Parser] 🏢 Extracted Role: ${parsedContent.role || 'Unknown'} at ${parsedContent.company || 'Unknown'}`);
+
     return {
       company: parsedContent.company || 'Unknown Company',
       role: parsedContent.role || 'Unknown Role',
@@ -117,11 +128,20 @@ Return ONLY a valid JSON object matching this structure: { "suggestions": ["bull
 `;
 
   try {
+    const modelUsed = "nvidia/nemotron-3-super-120b-a12b:free";
+    console.log(`\n[AI Optimizer] ✍️ Generating Resume Suggestions...`);
+    console.log(`[AI Optimizer] 🤖 Model: ${modelUsed}`);
+    console.log(`[AI Optimizer] ⏳ Waiting for OpenRouter response...`);
+
+    const startTime = Date.now();
     const response = await openrouter.chat.completions.create({
       // We use a fast free model
-      model: "google/gemini-2.5-flash-free", 
+      model: modelUsed,
       messages: [{ role: "user", content: prompt }]
     });
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[AI Optimizer] ✅ Success! Options generated in ${elapsed}s`);
 
     let content = response.choices[0].message.content || '{"suggestions":[]}';
     content = content.replace(/```json/g, '').replace(/```/g, '').trim();

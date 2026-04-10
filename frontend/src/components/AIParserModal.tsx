@@ -97,8 +97,7 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
   return (
     <div className="fixed inset-0 z-[70] bg-surface flex flex-col font-body text-on-surface overflow-auto">
-      {/* Context Top Bar */}
-      <header className="flex justify-between items-center w-full px-8 py-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-outline-variant/20 sticky top-0 z-40">
+      <header className="flex justify-between items-center w-full px-8 py-4 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/20 sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg milled-button flex items-center justify-center text-white">
             <span className="material-symbols-outlined text-[16px]">architecture</span>
@@ -239,7 +238,7 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
           {/* Right Column: AI Insights */}
           <div className="col-span-12 lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-            <section className="bg-white/70 backdrop-blur-xl rounded-xl p-8 border-l-4 border-secondary overflow-hidden relative shadow-lg">
+            <section className="bg-surface-container-lowest/80 backdrop-blur-xl rounded-xl p-8 border-l-4 border-secondary overflow-hidden relative shadow-lg">
               <div className="absolute -right-4 -top-4 text-secondary/10 transform rotate-12">
                 <span className="material-symbols-outlined text-9xl" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
               </div>
@@ -256,7 +255,7 @@ export function AIParserModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 <>
                   <div className="space-y-4 relative z-10 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
                     {parsedData.suggestions?.map((sugg: string, i: number) => (
-                      <div key={i} className="p-4 bg-white/50 rounded-lg hover:bg-white transition-all cursor-default group">
+                      <div key={i} className="p-4 bg-surface-container-high rounded-lg hover:bg-surface-container-highest transition-all cursor-default group">
                         <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">Impact Suggestion {i + 1}</p>
                         <p className="text-sm text-on-surface leading-relaxed">{sugg}</p>
                         <div className="mt-3 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
