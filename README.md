@@ -2,7 +2,7 @@
 
 **Nexus Talent** is a state-of-the-art, premium job application management platform. Built for high-performance job seekers, it leverages Artificial Intelligence to transform chaotic job hunts into structured, data-driven career strategies.
 
-![Premium UI Showcase](https://raw.githubusercontent.com/amansheikh3110/Nexus-Talent-AI-Assisted-Job-Application-Tracker-/main/frontend/public/images/dashboard_preview.png)
+![Premium UI Showcase](frontend/public/dashboard_preview.png)
 *(Note: Replace with actual screenshot path if available)*
 
 ---
